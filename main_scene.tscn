@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://dwftldme7whtx"]
+
+[ext_resource type="Script" uid="uid://dnoep4ymafoe6" path="res://Scenes/MainScene.cs" id="1_0f027"]
+
+[node name="MainScene" type="Node2D" unique_id=2105083049 node_paths=PackedStringArray("_grid", "_restartButton", "_gameOverLabel")]
+script = ExtResource("1_0f027")
+_grid = NodePath("GridContainer")
+_numberOfColumns = 9
+_numberOfMines = 5
+_restartButton = NodePath("Button")
+_gameOverLabel = NodePath("Label")
+
+[node name="GridContainer" type="GridContainer" parent="." unique_id=423832632]
+offset_left = 277.0
+offset_top = 118.0
+offset_right = 892.0
+offset_bottom = 562.0
+columns = 9
+
+[node name="Button" type="Button" parent="." unique_id=1896985827]
+offset_left = 528.0
+offset_top = 22.0
+offset_right = 608.0
+offset_bottom = 86.0
+text = "Restart"
+
+[node name="Label" type="Label" parent="." unique_id=218268516]
+offset_left = 505.0
+offset_top = 87.0
+offset_right = 631.0
+offset_bottom = 110.0
+text = "GameOver"
