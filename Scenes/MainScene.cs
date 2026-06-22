@@ -1,6 +1,6 @@
 using Godot;
-using System;
 using Minesweeper.Scenes.MainScene.Logic;
+using Minesweeper.Scenes.MainScene.Logic.Excepions;
 using Minesweeper.Scenes.MainScene.Nodes;
 
 public partial class MainScene : Node2D
@@ -11,9 +11,8 @@ public partial class MainScene : Node2D
 	[Export] private Button _restartButton;
 	[Export] private Label _gameOverLabel;
 
-	private readonly FieldSeeder _seeder = new();
-
-	private CellsManager _cellsManager;
+	private GridCell[,] _cells;
+	private MinefieldManager _minefieldManager;
 
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
@@ -25,36 +24,70 @@ public partial class MainScene : Node2D
 	private void StartGame()
 	{
 		_gameOverLabel.Visible = false;
-		foreach (var cell in _grid.GetChildren())
-		{
-			_grid.RemoveChild(cell);
-		}
-		var gridCells = CreateBoard();
-		_cellsManager = new CellsManager(gridCells, _numberOfColumns);
+		if (_cells != null)
+			foreach (var cell in _cells)
+			{
+				cell.QueueFree();
+			}
+
+		_cells = CreateBoard();
 	}
 
-	private GridCell[] CreateBoard()
+	private GridCell[,] CreateBoard()
 	{
-		var gridCells = new GridCell[_numberOfColumns*_numberOfColumns];
+		var cells = FieldSeeder.GetSeededCellsValues(_numberOfColumns, _numberOfMines);
+		var gridCells = new GridCell[_numberOfColumns, _numberOfColumns];
 		var cellSize = new Vector2(_grid.Size.X/_numberOfColumns, _grid.Size.Y/_numberOfColumns);
-		var seededCellsValues = _seeder.GetSeededCellsValues(_numberOfColumns, _numberOfMines);
-		for (int i=0; i<seededCellsValues.Length; i++)
+		
+		for(var r=0; r<_numberOfColumns; r++)
+		for (var c = 0; c < _numberOfColumns; c++)
 		{
-			var cell = new GridCell(i, seededCellsValues[i].Item1, seededCellsValues[i].Item2)
-				{ CustomMinimumSize = cellSize };
-			cell.BombPressed += HandleGameOver;
-			gridCells[i] = cell;
-			_grid.AddChild(cell);
+			var gridCell = new GridCell(r, c) {CustomMinimumSize = cellSize};
+			gridCell.LeftClicked += HandleLeftClicked;
+			gridCell.RightClicked += HandleRightClicked;
+			gridCells[r, c] = gridCell;
+			_grid.AddChild(gridCell);
 		}
+		
+		_minefieldManager = new MinefieldManager(cells);
+
 		return gridCells;
 	}
+	
+	private void HandleLeftClicked(int r, int c)
+	{
+		try
+		{
+			var needToReveal = _minefieldManager.Reveal(r, c);
+			foreach (var cellToReveal in needToReveal)
+			{
+				var cell = _cells[cellToReveal.Item1, cellToReveal.Item2];
+				cell.ButtonPressed = true;
+				cell.Render(cellToReveal.Item3);
+			}
+		}
+		catch (GameException)
+		{
+			_cells[r, c].ButtonPressed = true;
+			_cells[r, c].Render("B");
+			HandleGameOver();
+		}
+	}
 
+	private void HandleRightClicked(int r, int c)
+	{
+		var cell = _cells[r, c];
+		cell.IsFlagged = !cell.IsFlagged;
+		_minefieldManager.Flag(r, c);
+		cell.Render(cell.IsFlagged ? "P" : string.Empty);
+	}
+	
 	private void HandleGameOver()
 	{
 		_gameOverLabel.Visible = true;
-		foreach (GridCell cell in _grid.GetChildren())
+		foreach (var cell in _cells)
 		{
-			cell.Press();
+			cell.ButtonPressed = true;
 			cell.Disabled = true;
 		}
 	}
