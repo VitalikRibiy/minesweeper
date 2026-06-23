@@ -1,6 +1,5 @@
 using Godot;
 using Minesweeper.Scenes.MainScene.Logic;
-using Minesweeper.Scenes.MainScene.Logic.Excepions;
 using Minesweeper.Scenes.MainScene.Nodes;
 
 public partial class MainScene : Node2D
@@ -56,21 +55,18 @@ public partial class MainScene : Node2D
 	
 	private void HandleLeftClicked(int r, int c)
 	{
-		try
+		var needToReveal = _minefieldManager.Reveal(r, c);
+		if (needToReveal is null)
 		{
-			var needToReveal = _minefieldManager.Reveal(r, c);
-			foreach (var cellToReveal in needToReveal)
-			{
-				var cell = _cells[cellToReveal.Item1, cellToReveal.Item2];
-				cell.ButtonPressed = true;
-				cell.Render(cellToReveal.Item3);
-			}
-		}
-		catch (GameException)
-		{
-			_cells[r, c].ButtonPressed = true;
-			_cells[r, c].Render("B");
 			HandleGameOver();
+			return;
+		}
+		
+		foreach (var cellToReveal in needToReveal)
+		{
+			var cell = _cells[cellToReveal.Item1, cellToReveal.Item2];
+			cell.ButtonPressed = true;
+			cell.Render(cellToReveal.Item3);
 		}
 	}
 
@@ -85,10 +81,12 @@ public partial class MainScene : Node2D
 	private void HandleGameOver()
 	{
 		_gameOverLabel.Visible = true;
-		foreach (var cell in _cells)
+		var revealedCells = _minefieldManager.RevealAll();
+		foreach (var cell in revealedCells)
 		{
-			cell.ButtonPressed = true;
-			cell.Disabled = true;
+			_cells[cell.Item1, cell.Item2].ButtonPressed = true;
+			_cells[cell.Item1, cell.Item2].Disabled = true;
+			_cells[cell.Item1, cell.Item2].Render(cell.Item3);
 		}
 	}
 }

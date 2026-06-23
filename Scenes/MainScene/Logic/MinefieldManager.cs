@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Minesweeper.Scenes.MainScene.Logic.Enums;
-using Minesweeper.Scenes.MainScene.Logic.Excepions;
 using Minesweeper.Scenes.MainScene.Logic.Models;
 
 namespace Minesweeper.Scenes.MainScene.Logic;
@@ -17,19 +16,21 @@ public class MinefieldManager
 
     public IReadOnlyCollection<(int, int, string)> Reveal(int r, int c)
     {
-        var needToReveal = new HashSet<(int, int)> { (r, c) };
+        var needToReveal = new HashSet<(int, int)> {};
         switch (_cells[r,c].CellValueType)
         {
             case CellValuesTypes.Empty:
                 needToReveal = HandleEmptyCellClick(r,c);
                 break;
             case CellValuesTypes.Number:
+                if(!_cells[r,c].IsPressed) break;
                 needToReveal = HandleNumberCellClick(r,c);
                 break;
             case CellValuesTypes.Bomb:
-                throw new GameException();
+                return null;
         }
 
+        needToReveal.Add((r,c));
         var valuesToReveal = new HashSet<(int, int, string)>();
         foreach (var cellToReveal in needToReveal)
         {
@@ -39,6 +40,22 @@ public class MinefieldManager
         }
         
         return valuesToReveal;
+    }
+
+    public IReadOnlyCollection<(int, int, string)> RevealAll()
+    {
+        var revealedCells = new HashSet<(int, int, string)>();
+        for (int r = 0; r < _cells.GetLength(0); r++)
+        for (int c = 0; c < _cells.GetLength(1); c++)
+        {
+            revealedCells.Add((r,c,_cells[r,c].CellValue));
+        }
+        return revealedCells;
+    }
+    
+    public void Flag(int r, int c)
+    {
+        _cells[r, c].IsFlagged = !_cells[r,c].IsFlagged;
     }
     
     private HashSet<(int,int)> HandleEmptyCellClick(int row, int col)
@@ -50,9 +67,9 @@ public class MinefieldManager
 
     private HashSet<(int,int)> HandleNumberCellClick(int row, int col)
     {
-        var needToReveal = new HashSet<(int,int)>();
+        var needToReveal = new HashSet<(int,int)>() {(row,col)};
         var numberOfFlaggedBombs = GetNumberOfBombNeighbors(row, col, needToReveal);
-        return numberOfFlaggedBombs.ToString() == _cells[row, col].CellValue ? needToReveal : new HashSet<(int,int)>();
+        return numberOfFlaggedBombs.ToString() == _cells[row, col].CellValue ? needToReveal : new HashSet<(int,int)>(){(row,col)};
     }
 
     private void GetLinkedEmptyNeighbors(int row, int col, HashSet<(int, int)> needToReveal)
@@ -93,10 +110,5 @@ public class MinefieldManager
         }
         
         return count;
-    }
-
-    public void Flag(int r, int c)
-    {
-        _cells[r, c].IsFlagged = !_cells[r,c].IsFlagged;
     }
 }

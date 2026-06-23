@@ -13,12 +13,12 @@ public static class FieldSeeder
         for (int c = 0; c < numberOfColumns; c++)
             cellsValues[r, c] = new Cell();
         var bombIndexes = new (int, int)[numberOfMines];
+        var random = new Random();
         for (uint i = 0; i < numberOfMines; i++)
         {
             var bombPlaced = false;
             while (!bombPlaced)
             {
-                var random = new Random();
                 var r = random.Next(0, numberOfColumns);
                 var c = random.Next(0, numberOfColumns);
                 if (cellsValues[r,c] == null || cellsValues[r,c].CellValueType == CellValuesTypes.Empty)
